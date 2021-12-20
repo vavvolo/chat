@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=secretPassword
+      - KEYCLOAK_IMPORT=/tmp/gogogo.json
+    volumes:
+      - "./realm/gogogo.json:/tmp/gogogo.json"
