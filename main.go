@@ -96,7 +96,7 @@ func main() {
 
 	goth.UseProviders(openidConnect)
 
-	r := newRoom()
+	r := newRoom(UseGravatarAvatar)
 	//r.tracer = trace.New(os.Stdout)
 
 	// The second parameter of httpHandle is a Handler interface,

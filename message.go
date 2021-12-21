@@ -5,8 +5,9 @@ import (
 )
 
 type message struct {
-	UserID   string
-	FullName string
-	Message  string
-	When     time.Time
+	UserID    string
+	FullName  string
+	Message   string
+	When      time.Time
+	AvatarURL string
 }

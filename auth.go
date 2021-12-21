@@ -14,6 +14,13 @@ const (
 	sessionUserKey = "USER"
 )
 
+const (
+	userIDKey    = "UserID"
+	fullNameKey  = "FullName"
+	avatarURLKey = "AvatarURL"
+	emailKey     = "Email"
+)
+
 func init() {
 	// Register the type with gob, otherwise gorilla/sessions
 	// won't be able to save the data in the cookie
@@ -52,8 +59,10 @@ func oauthCallbackHandler(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userData := map[string]interface{}{
-		"UserID":   user.UserID,
-		"FullName": strings.Join([]string{user.FirstName, user.LastName}, " "),
+		userIDKey:    user.UserID,
+		fullNameKey:  strings.Join([]string{user.FirstName, user.LastName}, " "),
+		avatarURLKey: user.AvatarURL,
+		emailKey:     user.Email,
 	}
 
 	err = saveUserInSession(res, req, userData)

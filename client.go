@@ -29,8 +29,9 @@ func (c *client) read() {
 			return
 		}
 
-		msg.UserID = c.userData["UserID"].(string)
-		msg.FullName = c.userData["FullName"].(string)
+		msg.UserID = c.userData[userIDKey].(string)
+		msg.FullName = c.userData[fullNameKey].(string)
+		msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c)
 		msg.When = time.Now()
 
 		c.room.forward <- msg
