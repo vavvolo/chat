@@ -23,7 +23,7 @@ var upgrader = &websocket.Upgrader{
 
 type room struct {
 	// forward is a channel that holds messages that should be forwarded to all clients in the room.
-	forward chan []byte
+	forward chan *message
 	// join is a channel for clients wishing to join the room.
 	join chan *client
 	// leave is a channel for clients wishing to leave the room.
@@ -36,7 +36,7 @@ type room struct {
 
 func newRoom() *room {
 	return &room{
-		forward: make(chan []byte),
+		forward: make(chan *message),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
@@ -65,7 +65,7 @@ func (r *room) run() {
 			close(client.send)
 			r.tracer.Trace("Client left.")
 		case msg := <-r.forward:
-			r.tracer.Trace("Message received: ", string(msg))
+			r.tracer.Trace("Message received: ", msg.Message)
 			// forward message to all clients
 			for client := range r.clients {
 				client.send <- msg
@@ -86,11 +86,18 @@ func (r *room) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	userData, err := getUserFromSession(req)
+	if err != nil {
+		log.Fatal("ServeHTTP:", err)
+		return
+	}
+
 	// create a client object
 	client := &client{
-		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
+		socket:   socket,
+		send:     make(chan *message, messageBufferSize),
+		room:     r,
+		userData: userData,
 	}
 
 	// send a message to the room join channel
