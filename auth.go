@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	sessionName      = "GO_CHAT_SESSION"
-	sessionUserIDKey = "USER_ID"
+	sessionName    = "GO_CHAT_SESSION"
+	sessionUserKey = "USER"
 )
 
 func init() {
@@ -67,12 +67,29 @@ func oauthCallbackHandler(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func logoutHandler(res http.ResponseWriter, req *http.Request) {
+	err := gothic.Logout(res, req)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = clearUserInSession(res, req)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Location", "/login")
+	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
 func saveUserInSession(res http.ResponseWriter, req *http.Request, userData map[string]interface{}) error {
 	// Get a session. We're ignoring the error resulted from decoding an
 	// existing session: Get() always returns a session, even if empty.
 	session, _ := store.Get(req, sessionName)
 
-	session.Values[sessionUserIDKey] = userData
+	session.Values[sessionUserKey] = userData
 	err := session.Save(req, res)
 	if err != nil {
 		return err
@@ -86,7 +103,7 @@ func getUserFromSession(req *http.Request) (map[string]interface{}, error) {
 	// existing session: Get() always returns a session, even if empty.
 	session, _ := store.Get(req, sessionName)
 
-	v, ok := session.Values[sessionUserIDKey]
+	v, ok := session.Values[sessionUserKey]
 	if !ok {
 		return nil, fmt.Errorf("missing sessionUserKey")
 	}
@@ -97,4 +114,22 @@ func getUserFromSession(req *http.Request) (map[string]interface{}, error) {
 	}
 
 	return userData, nil
+}
+
+func clearUserInSession(res http.ResponseWriter, req *http.Request) error {
+	session, _ := store.Get(req, sessionName)
+
+	// Setting MaxAge to -1 indicates that the cookie
+	// should be deleted immediately by the browser.
+	// Not all browsers are forced to delete the cookie,
+	// which is why we also set an empty map in session.Values,
+	// removing the previously stored data.
+	session.Options.MaxAge = -1
+	session.Values = make(map[interface{}]interface{})
+	err := session.Save(req, res)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

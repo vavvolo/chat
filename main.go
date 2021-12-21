@@ -108,6 +108,7 @@ func main() {
 
 	http.HandleFunc("/auth/openid-connect", loginHandler)
 	http.HandleFunc("/auth/openid-connect/callback", oauthCallbackHandler)
+	http.HandleFunc("/logout/openid-connect", logoutHandler)
 
 	http.Handle("/room", r)
 
