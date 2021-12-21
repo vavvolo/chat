@@ -33,13 +33,15 @@ const (
 	isProd = false // Set to true when serving over https
 )
 
+var store *sessions.CookieStore
+
 type templateHandler struct {
 	once     sync.Once
 	filename string
 	template *template.Template
 }
 
-func (th *templateHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (th *templateHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	// Do is intended for initialization that must be run exactly once.
 	th.once.Do(func() {
 		// Join joins any number of path elements into a single path, separating them with an OS specific Separator.
@@ -48,7 +50,14 @@ func (th *templateHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		th.template = template.Must(template.ParseFiles(templatePath))
 	})
 
-	th.template.Execute(rw, r)
+	data := make(map[string]interface{})
+	data["Host"] = req.Host
+
+	if userData, err := getUserFromSession(req); err == nil {
+		data["UserData"] = userData
+	}
+
+	th.template.Execute(res, data)
 }
 
 func init() {
@@ -60,7 +69,7 @@ func init() {
 	authKeyOne := []byte(os.Getenv(envKeySessionSecretAuthKeyOne))
 	encryptionKeyOne := []byte(os.Getenv(envKeySessionSecretEncKeyOne))
 
-	store := sessions.NewCookieStore(authKeyOne, encryptionKeyOne)
+	store = sessions.NewCookieStore(authKeyOne, encryptionKeyOne)
 	store.Options.HttpOnly = true // HttpOnly should always be enabled
 	store.Options.MaxAge = maxAge
 	store.Options.Path = "/"
